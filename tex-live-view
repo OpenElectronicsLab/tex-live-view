@@ -1,0 +1,36 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2022 S. K. Medlock, E. K. Herman, K. M. Shaw
+
+if [ "_${VERBOSE}_" != "__" ] && [ "$VERBOSE" -gt 0 ]; then
+	set -x
+fi
+
+if [ "_$1_" == "__" ]; then
+	TEX_FILE=notes.tex
+fi
+
+BASE_FILE=$(basename $TEX_FILE .tex)
+PDF_FILE=${BASE_FILE}.pdf
+
+function term-title() {
+	echo -ne "\033]0;$1\007"
+}
+term-title "$PDF_FILE"
+
+touch $PDF_FILE
+evince $PDF_FILE &
+EVINCE_PID=$!
+
+function cleanup() {
+	if [ "_${VERBOSE}_" == "__" ] || [ "$VERBOSE" -le 0 ]; then
+		kill $EVINCE_PID 2>/dev/null
+	else
+		kill $EVINCE_PID
+	fi
+	term-title ""
+}
+trap cleanup EXIT
+
+ls -1 $TEX_FILE | entr \
+	pdflatex -halt-on-error $TEX_FILE -o $PDF_FILE
