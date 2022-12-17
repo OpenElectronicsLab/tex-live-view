@@ -13,15 +13,19 @@ fi
 BASE_FILE=$(basename $TEX_FILE .tex)
 PDF_FILE=${BASE_FILE}.pdf
 
+# set the terminal title
 function term-title() {
 	echo -ne "\033]0;$1\007"
 }
-term-title "$PDF_FILE"
 
+# launch evince, a PDF viewer
+# evince will automatically re-render when the .pdf file changes
 touch $PDF_FILE
+term-title "$PDF_FILE"
 evince $PDF_FILE &
 EVINCE_PID=$!
 
+# be sure to kill evince when done
 function cleanup() {
 	if [ "_${VERBOSE}_" == "__" ] || [ "$VERBOSE" -le 0 ]; then
 		kill $EVINCE_PID 2>/dev/null
@@ -32,5 +36,8 @@ function cleanup() {
 }
 trap cleanup EXIT
 
+# entr - run arbitrary commands when files change
+# we'll have entr monitor $TEX_FILE and re-run pdflatex when it does
+# set to halt-on-error so it does not hang on bad syntax
 ls -1 $TEX_FILE | entr \
 	pdflatex -halt-on-error $TEX_FILE -o $PDF_FILE
